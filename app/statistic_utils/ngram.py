@@ -23,6 +23,37 @@ from textblob import TextBlob
 import pandas as pd
 from multiprocessing.dummy import Pool as ThreadPool
 import re
+import os
+import sys
+import getopt
+
+HELP_TEXT = """Usage: python3 ngram.py -t TEXTS_DIR
+-t TEXTS_DIR, --texts=TEXTS_DIR:
+\tPath to a directory with .txt.
+-h, --help:
+\tPrints help of the script.
+"""
+
+def get_arguments():
+    """ Extract values of command line arguments"""
+    try:
+        arguments = getopt.getopt(sys.argv[1:], "t:h", ["texts=", "help"])
+    except getopt.GetoptError as err:
+        exit_with_error_message(str(err))
+    texts_path = None
+    language = "en"
+    for opt, arg in arguments[0]:
+        if opt in ("-t", "--texts"):
+            texts_path = arg
+        elif opt in ("-h", "--help"):
+            print(HELP_TEXT)
+            sys.exit()
+        else:
+            assert False, "unhandled option"
+    if texts_path is None:
+        exit_with_error_message("Specify the path to texts.")
+    return texts_path
+
 
 count = 0
 complete = 0
@@ -119,6 +150,15 @@ def generate_statistic(file):
 
     # считываем текст из файла
     text = re.sub(r'[^\w\s]', '', get_text_file(file)).lower()
+    #
+    # text_ngram = []
+    # for elem in text.split():
+    #     if elem not in STOP_WORDS:
+    #         text_ngram.append(elem)
+
+    # создание отдельного объекта TextBlob без знаков пунктуации и стоп слов для подсчёта n-грамм
+    # blob_ngram = TextBlob(str(text_ngram))
+
     blob_ngram = TextBlob(text)
 
     # определение n-грамм для конкретного текста с записью их в ngramN_dict
@@ -128,9 +168,9 @@ def generate_statistic(file):
 
     # словари с нграммами превращаются в списки кортежей вида:
     # ngram1_dict = [('NOUN', 21), ('CCONJ', 7), ('VERB', 6), ('ADP', 5), ('PRON', 5), ('ADV', 2), ('DET', 1), ('ADJ', 1)]
-    ngram1_dict = sorted(ngram1_dict.items(), key=lambda kv: kv[1], reverse=True)[:40]
-    ngram2_dict = sorted(ngram2_dict.items(), key=lambda kv: kv[1], reverse=True)[:40]
-    ngram3_dict = sorted(ngram3_dict.items(), key=lambda kv: kv[1], reverse=True)[:40]
+    ngram1_dict = sorted(ngram1_dict.items(), key=lambda kv: kv[1], reverse=True)#[:200]
+    ngram2_dict = sorted(ngram2_dict.items(), key=lambda kv: kv[1], reverse=True)#[:200]
+    ngram3_dict = sorted(ngram3_dict.items(), key=lambda kv: kv[1], reverse=True)#[:200]
 
     complete += 1
     print(complete, ' / ', count)
@@ -199,13 +239,13 @@ def take_file_ngram_result(ngram_keys, ngram_dict):
             result.append('0')
     return result
 
-
-names = open("", encoding="utf-8").read().split("\n")
-
-files1 = names
-
-output_path_ngram1 = ""
-output_path_ngram2 = ""
-output_path_ngram3 = ""
-
-generate_statistics(files1, output_path_ngram1, output_path_ngram2, output_path_ngram3)
+if __name__ == "__main__":
+    TEXTS_DIR = get_arguments()
+    categories = [os.path.join(TEXTS_DIR, dirname) for dirname in os.listdir(TEXTS_DIR) if os.path.isdir(os.path.join(TEXTS_DIR, dirname))]
+    names = []
+    for category in categories:
+        names += [os.path.join(category, filename) for filename in os.listdir(category) if filename.endswith('txt')]
+    output_path_ngram1 = "output_path_ngram1.csv"
+    output_path_ngram2 = "output_path_ngram2.csv"
+    output_path_ngram3 = "output_path_ngram3.csv"
+    generate_statistics(names, output_path_ngram1, output_path_ngram2, output_path_ngram3)

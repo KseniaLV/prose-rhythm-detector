@@ -20,6 +20,7 @@ ProseRhythmDetector - the tool for extraction of rhythm features and computation
 """
 import traceback
 import stanza
+import os
 import sys
 from textblob import TextBlob
 import pandas as pd
@@ -32,9 +33,9 @@ complete = 0
 nltk.download('punkt')
 
 # выбор языка
-stanza.download('ru')
+# stanza.download('ru')
 # stanza.download('es')
-# stanza.download('en')
+#stanza.download('en')
 # stanza.download('fr')
 nlp = stanza.Pipeline(lang='ru', processors='tokenize, pos')
 sys.setrecursionlimit(2000)
@@ -263,8 +264,10 @@ def take_file_ngram_result(ngram_keys, ngram_list):
 
 
 # список обрабатываемых файлов
-names = open("", encoding="utf-8").read().split("\n")
+TEXTS_DIR = 'Здесь указать каталог с исходными текстами'
+categories = [os.path.join(TEXTS_DIR, dirname) for dirname in os.listdir(TEXTS_DIR) if os.path.isdir(os.path.join(TEXTS_DIR, dirname))]
+names = []
+for category in categories:
+    names += [os.path.join(category, filename) for filename in os.listdir(category) if filename.endswith('txt')]
 
-files1 = names
-
-generate_statistics(files1, 'PoS_ngram1_pt1.csv', 'PoS_ngram2_pt1.csv', 'PoS_ngram3_pt1.csv', 'PoS_ngram4_pt1.csv')
+generate_statistics(names, 'PoS_ngram1_pt1.csv', 'PoS_ngram2_pt1.csv', 'PoS_ngram3_pt1.csv', 'PoS_ngram4_pt1.csv')

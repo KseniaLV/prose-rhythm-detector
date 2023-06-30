@@ -16,12 +16,51 @@ ProseRhythmDetector - the tool for extraction of rhythm features and computation
 """
 
 """
-Утилита для подсчёта статистики для стилометрических характеристик уровня символов и слов.
+Утилита для подсчёта статистики для стилометрических характеристик уровня символов и некоторых характеристик уровня слов.
 """
 import traceback
 from textblob import TextBlob
 import pandas as pd
 from multiprocessing.dummy import Pool as ThreadPool
+import os
+import sys
+import getopt
+
+HELP_TEXT = """Usage: python3 general.py -t TEXTS_DIR
+-t TEXTS_DIR, --texts=TEXTS_DIR:
+\tPath to a directory with .txt.
+-h, --help:
+\tPrints help of the script.
+"""
+
+def get_arguments():
+    """ Extract values of command line arguments"""
+    try:
+        arguments = getopt.getopt(sys.argv[1:], "t:h", ["texts=", "help"])
+    except getopt.GetoptError as err:
+        exit_with_error_message(str(err))
+    texts_path = None
+    language = "en"
+    for opt, arg in arguments[0]:
+        if opt in ("-t", "--texts"):
+            texts_path = arg
+        elif opt in ("-h", "--help"):
+            print(HELP_TEXT)
+            sys.exit()
+        else:
+            assert False, "unhandled option"
+    if texts_path is None:
+        exit_with_error_message("Specify the path to texts.")
+    return texts_path
+
+# "number_of_sentence",
+# "average_sentence_length_by_character",
+# "average_sentence_length_by_word",
+
+
+# "number_of_strings",
+# "average_string_length_by_word",
+# "average_string_length_by_character",
 
 ordered_features = [
     "number_of_alphabets",
@@ -35,40 +74,40 @@ ordered_features = [
 
 ordered_features_az_punc = [
 
-    "a",
-    "b",
-    "c",
-    "d",
-    "e",
-    "f",
-    "g",
-    "h",
-    "i",
-    "j",
-    "k",
-    "l",
-    "m",
-    "n",
-    "o",
-    "p",
-    "q",
-    "r",
-    "s",
-    "t",
-    "u",
-    "v",
-    "w",
-    "x",
-    "y",
-    "z",
-
-    "þ",
-    "é",
-    "è",
-    "æ",
-    "ï",
-    "ê",
-    "ð",
+    #"a",
+    #"b",
+    #"c",
+    #"d",
+    #"e",
+    #"f",
+    #"g",
+    #"h",
+    #"i",
+    #"j",
+    #"k",
+    #"l",
+    #"m",
+    #"n",
+    #"o",
+    #"p",
+    #"q",
+    #"r",
+    #"s",
+    #"t",
+    #"u",
+    #"v",
+    #"w",
+    #"x",
+    #"y",
+    #"z",
+    #
+    # "þ",
+    # "é",
+    # "è",
+    # "æ",
+    # "ï",
+    # "ê",
+    # "ð",
 
     "а",
     "б",
@@ -103,33 +142,33 @@ ordered_features_az_punc = [
     "э",
     "ю",
     "я",
+    #
+    # "ѣ",
+    # "і",
 
-    "ѣ",
-    "і",
+    # "ç",
+    # "à",
+    # "â",
+    # "é",
+    # "è",
+    # "ê",
+    # "ë",
+    # 'î',
+    # "ï",
+    # "ô",
+    # "ù",
+    # "û",
+    # "ü",
+    # "ÿ",
 
-    "ç",
-    "à",
-    "â",
-    "é",
-    "è",
-    "ê",
-    "ë",
-    'î',
-    "ï",
-    "ô",
-    "ù",
-    "û",
-    "ü",
-    "ÿ",
-
-    "ñ",
-    "á",
-    "ó",
-    "í",
-    "ú",
-    "ò",
-    "ö",
-    "é",
+    # "ñ",
+    # "á",
+    # "ó",
+    # "í",
+    # "ú",
+    # "ò",
+    # "ö",
+    # "é",
 
     ".",
     ",",
@@ -176,6 +215,7 @@ def generate_statistics(files, output_path_general, output_path_letters_punc):
     open(output_path_letters_punc, 'w').close()
 
     # Итерируем список файлов и результат статистики пишем в качестве строки в файл
+
     pool = ThreadPool(5)
     results = pool.starmap(generate_statistic, zip(files))
     results_az_punc = pool.starmap(generate_statistic_az_punc, zip(files))
@@ -214,6 +254,9 @@ def generate_statistics(files, output_path_general, output_path_letters_punc):
                                           ])
     table_general.to_csv(output_path_general, header=True, index=True)
     table_number_of_alphabets_az = pd.DataFrame(file_result_az_punc, index=files, columns=ordered_features_az_punc)
+    table_number_of_alphabets_az["average_sentence_length_by_character"] = table_general["average_sentence_length_by_character"]
+    table_number_of_alphabets_az["average_sentence_length_by_word"] = table_general["average_sentence_length_by_word"]
+    table_number_of_alphabets_az["average_word_length"] = table_general["average_word_length"]
     table_number_of_alphabets_az.to_csv(output_path_letters_punc, header=True, index=True)
 
 
@@ -315,6 +358,7 @@ def generate_statistic_az_punc(file):
 
 def get_text_file(file):
     f = open(file, encoding="utf-8")
+    # text = " ".join(f.read().split("\n"))
     text = f.read()
     return text
 
@@ -372,46 +416,50 @@ def get_feature_dict():
     }
 
 
+# "number_of_sentence": 0,
+# "average_sentence_length_by_character": 0,
+# "average_sentence_length_by_word": 0
+
 def get_feature_dict_az_punc():
     """
    Возвращаем стандартный словарь с буквами и знаками пунктуации, где ключ - буква или знак, значение - их количество
 
    """
     return {
-        "a": 0,
-        "b": 0,
-        "c": 0,
-        "d": 0,
-        "e": 0,
-        "f": 0,
-        "g": 0,
-        "h": 0,
-        "i": 0,
-        "j": 0,
-        "k": 0,
-        "l": 0,
-        "m": 0,
-        "n": 0,
-        "o": 0,
-        "p": 0,
-        "q": 0,
-        "r": 0,
-        "s": 0,
-        "t": 0,
-        "u": 0,
-        "v": 0,
-        "w": 0,
-        "x": 0,
-        "y": 0,
-        "z": 0,
-
-        "þ": 0,
-        "é": 0,
-        "è": 0,
-        "æ": 0,
-        "ï": 0,
-        "ê": 0,
-        "ð": 0,
+        #"a": 0,
+        #"b": 0,
+        #"c": 0,
+        #"d": 0,
+        #"e": 0,
+        #"f": 0,
+        #"g": 0,
+        #"h": 0,
+        #"i": 0,
+        #"j": 0,
+        #"k": 0,
+        #"l": 0,
+        #"m": 0,
+        #"n": 0,
+        #"o": 0,
+        #"p": 0,
+        #"q": 0,
+        #"r": 0,
+        #"s": 0,
+        #"t": 0,
+        #"u": 0,
+        #"v": 0,
+        #"w": 0,
+        #"x": 0,
+        #"y": 0,
+        #"z": 0,
+        #
+        # "þ": 0,
+        # "é": 0,
+        # "è": 0,
+        # "æ": 0,
+        # "ï": 0,
+        # "ê": 0,
+        # "ð": 0,
 
         "а": 0,
         "б": 0,
@@ -447,32 +495,32 @@ def get_feature_dict_az_punc():
         "ю": 0,
         "я": 0,
 
-        "ѣ": 0,
-        "і": 0,
+        # "ѣ": 0,
+        # "і": 0,
 
-        "ç": 0,
-        "à": 0,
-        "â": 0,
-        "é": 0,
-        "è": 0,
-        "ê": 0,
-        "ë": 0,
-        'î': 0,
-        "ï": 0,
-        "ô": 0,
-        "ù": 0,
-        "û": 0,
-        "ü": 0,
-        "ÿ": 0,
+        # "ç": 0,
+        # "à": 0,
+        # "â": 0,
+        # "é": 0,
+        # "è": 0,
+        # "ê": 0,
+        # "ë": 0,
+        # 'î': 0,
+        # "ï": 0,
+        # "ô": 0,
+        # "ù": 0,
+        # "û": 0,
+        # "ü": 0,
+        # "ÿ": 0,
 
-        "ñ": 0,
-        "á": 0,
-        "ó": 0,
-        "í": 0,
-        "ú": 0,
-        "ò": 0,
-        "ö": 0,
-        "é": 0,
+        # "ñ": 0,
+        # "á": 0,
+        # "ó": 0,
+        # "í": 0,
+        # "ú": 0,
+        # "ò": 0,
+        # "ö": 0,
+        # "é": 0,
 
         ".": 0,
         ",": 0,
@@ -497,12 +545,9 @@ def get_feature_dict_az_punc():
         "-": 0
     }
 
-
-names = open("", encoding="utf-8").read().split("\n")
-
-files1 = names
-
-output_path_general1 = ""
-output_path_letters_punc = ""
-
-generate_statistics(files1, output_path_general1, output_path_letters_punc)
+if __name__ == "__main__":
+    TEXTS_DIR = get_arguments()
+    names = [os.path.join(TEXTS_DIR, filename) for filename in os.listdir(TEXTS_DIR) if filename.endswith('txt')]
+    output_path_general1 = TEXTS_DIR + "_char_general.csv"
+    output_path_letters_punc = TEXTS_DIR + "_char.csv"
+    generate_statistics(names, output_path_general1, output_path_letters_punc)
